@@ -1,0 +1,237 @@
+---
+description: Migrate deprecated puppetlabs-stdlib functions for stdlib 9.x compatibility. Use when fixing deprecated stdlib usage in Puppet manifests.
+globs: ["**/manifests/**/*.pp"]
+---
+
+# Puppet stdlib Migration Rule
+
+You are helping migrate a Puppet module from deprecated stdlib functions to
+stdlib 9.x-compatible equivalents using Puppet built-ins and the native type system.
+
+**Target environment:** Puppet 6+ (forward-compatible with Puppet 7 and 8).
+
+---
+
+## CRITICAL RULES — READ BEFORE DOING ANYTHING
+
+1. **ONLY fix deprecated stdlib functions.** Do not refactor, modernize, or "improve"
+   anything that is not deprecated. If a function works on stdlib 9.x, leave it alone.
+
+2. **ONLY modify `.pp` files** (manifests and Puppet classes/defined types).
+   Do NOT edit `.erb` templates, `.epp` templates, Ruby files, Hiera data,
+   or any other file type.
+
+3. **If you find issues in non-.pp files** (e.g., deprecated stdlib calls in .erb
+   templates, Hiera data referencing deprecated functions, or broken patterns in
+   Ruby code) — **report them to the user but DO NOT modify them.** List the file,
+   line, and what you found. Wait for explicit permission before touching these files.
+
+4. **Do not touch non-deprecated stdlib functions.** Functions like `ensure_packages`,
+   `str2bool`, `pw_hash`, `deep_merge`, `pick`, `pick_default`, `loadyaml`, `to_json`,
+   `to_yaml`, etc. are NOT deprecated and work fine on stdlib 9.x. Leave them alone.
+
+5. **Do not remove stdlib dependency.** Even after migrating all deprecated functions,
+   the module likely still uses Stdlib::* data types, resource types (file_line, anchor),
+   or non-deprecated functions that require stdlib.
+
+6. **Assume Puppet 6+.** Do not check or rely on metadata.json for Puppet version.
+   All bare function calls on Puppet 6+ resolve to the built-in when one exists.
+
+7. **One file at a time.** Process each .pp file individually. Show what you changed
+   and why before moving to the next file.
+
+---
+
+## HOW TO USE THIS RULE
+
+### Step 1: Run the detection script in your terminal
+
+```bash
+bash .claude/skills/puppet-stdlib-migrate/scripts/check_deprecated_usage_v7.sh .
+```
+
+Or if running from outside the module:
+```bash
+bash /path/to/stdlib_fetcher/.claude/skills/puppet-stdlib-migrate/scripts/check_deprecated_usage_v7.sh /path/to/module
+```
+
+### Step 2: Share the output
+
+Paste the script output into the chat or ensure it's visible in the terminal.
+The output shows each deprecated function, its location (file:line), and severity.
+
+### Step 3: Ask Cursor to fix
+
+Example prompts:
+- "Fix the deprecated stdlib functions from the script output"
+- "Migrate the deprecated functions in manifests/init.pp"
+- "Fix all deprecated validate_* calls in this module"
+
+---
+
+## MIGRATION REFERENCE
+
+### Category A: Puppet Built-in Replacements
+
+These deprecated functions have direct Puppet built-in equivalents on Puppet 6+.
+
+| Deprecated | Replacement | Example |
+|-----------|-------------|---------|
+| `abs($val)` | `$val.abs` | Built-in since Puppet 6.0 |
+| `camelcase($str)` | `$str.camelcase` | Built-in since Puppet 6.0 |
+| `capitalize($str)` | `$str.capitalize` | Built-in since Puppet 6.0 |
+| `ceiling($num)` | `$num.ceiling` | Built-in since Puppet 6.0 |
+| `chomp($str)` | `$str.chomp` | Built-in since Puppet 6.0 |
+| `chop($str)` | `$str.chop` | Built-in since Puppet 6.0 |
+| `dig($data, ['a','b'])` | `$data.dig('a', 'b')` | Individual keys, not array |
+| `dig44($data, ['a','b'])` | `$data.dig('a', 'b')` | Spread array keys |
+| `downcase($str)` | `$str.downcase` | Built-in since Puppet 6.0 |
+| `empty($var)` | `$var.empty` | Built-in since Puppet 5.5 |
+| `flatten($arr)` | `$arr.flatten` | Built-in since Puppet 5.5 |
+| `floor($num)` | `$num.floor` | Built-in since Puppet 6.0 |
+| `getvar('mod::var')` | `$mod::var` | Direct variable access preferred |
+| `has_key($hash, 'k')` | `'k' in $hash` | `in` operator — note arg reversal |
+| `hash(['a',1,'b',2])` | `Hash(['a',1,'b',2])` | Type constructor |
+| `join($arr, ', ')` | `$arr.join(', ')` | Built-in since Puppet 6.0 |
+| `keys($hash)` | `$hash.keys` | Built-in since Puppet 6.0 |
+| `length($var)` | `$var.length` | Built-in since Puppet 5.5 |
+| `lstrip($str)` | `$str.lstrip` | Built-in since Puppet 6.0 |
+| `max($a, $b)` | `max($a, $b)` or `[$a,$b].max` | Built-in since Puppet 6.0 |
+| `min($a, $b)` | `min($a, $b)` or `[$a,$b].min` | Built-in since Puppet 6.0 |
+| `private()` | `assert_private()` | Rename — still requires stdlib |
+| `round($num)` | `$num.round` | Built-in since Puppet 6.0 |
+| `rstrip($str)` | `$str.rstrip` | Built-in since Puppet 6.0 |
+| `size($var)` | `$var.length` | Use `length` instead |
+| `sort($arr)` | `$arr.sort` | Built-in since Puppet 5.5 |
+| `sprintf_hash(fmt, h)` | `sprintf(fmt, h)` | Built-in since Puppet 4.10 |
+| `strip($str)` | `$str.strip` | Built-in since Puppet 6.0 |
+| `try_get_value($d, 'a/b')` | `$d.dig('a', 'b')` | Use dig with individual keys |
+| `type($var)` | `type($var)` | Built-in returns Type object, not string |
+| `type3x($var)` | `type($var)` | Same as above |
+| `unique($arr)` | `$arr.unique` | Built-in since Puppet 5.5 |
+| `upcase($str)` | `$str.upcase` | Built-in since Puppet 6.0 |
+| `values($hash)` | `$hash.values` | Built-in since Puppet 6.0 |
+
+### Category B: Type-System Replacements (is_* functions)
+
+Replace `is_*` type-checking functions with Puppet `=~ Type` match expressions.
+
+| Deprecated | Replacement |
+|-----------|-------------|
+| `is_absolute_path($var)` | `$var =~ Stdlib::Absolutepath` (still needs stdlib) |
+| `is_array($var)` | `$var =~ Array` |
+| `is_bool($var)` | `$var =~ Boolean` |
+| `is_domain_name($var)` | `$var =~ Stdlib::Fqdn` (still needs stdlib) |
+| `is_email_address($var)` | `$var =~ Stdlib::Email` (still needs stdlib) |
+| `is_float($var)` | `$var =~ Float` |
+| `is_function_available($f)` | No replacement — remove or use `defined()` |
+| `is_hash($var)` | `$var =~ Hash` |
+| `is_integer($var)` | `$var =~ Integer` |
+| `is_ip_address($var)` | `$var =~ Stdlib::IP::Address` (still needs stdlib) |
+| `is_ipv4_address($var)` | `$var =~ Stdlib::IP::Address::V4` |
+| `is_ipv6_address($var)` | `$var =~ Stdlib::IP::Address::V6` |
+| `is_mac_address($var)` | `$var =~ Stdlib::MAC` (still needs stdlib) |
+| `is_numeric($var)` | `$var =~ Numeric` |
+| `is_string($var)` | `$var =~ String` |
+
+### Category C: Validation Function Replacements (validate_* functions)
+
+**Path 1 — Class parameters (preferred):**
+
+```puppet
+# Before:
+class mymod ($path, $packages, $enabled) {
+  validate_absolute_path($path)
+  validate_array($packages)
+  validate_bool($enabled)
+}
+
+# After:
+class mymod (
+  Stdlib::Absolutepath $path,
+  Array $packages,
+  Boolean $enabled,
+) {
+}
+```
+
+**Path 2 — Mid-manifest (use assert_type):**
+
+```puppet
+# Before:
+validate_hash($data)
+
+# After:
+assert_type(Hash, $data)
+```
+
+**Type mappings:**
+
+| Deprecated | Type Parameter |
+|-----------|---------------|
+| `validate_absolute_path` | `Stdlib::Absolutepath` |
+| `validate_array` | `Array` |
+| `validate_bool` | `Boolean` |
+| `validate_hash` | `Hash` |
+| `validate_integer` | `Integer` (with min/max: `Integer[$min, $max]`) |
+| `validate_ip_address` | `Stdlib::IP::Address` |
+| `validate_ipv4_address` | `Stdlib::IP::Address::V4` |
+| `validate_ipv6_address` | `Stdlib::IP::Address::V6` |
+| `validate_numeric` | `Numeric` |
+| `validate_re($v, '^pat$')` | `Pattern[/^pat$/]` |
+| `validate_slength($v, 10)` | `String[0, 10]` (or `String[min, max]`) |
+| `validate_string` | `String` |
+| `validate_legacy(Type, ..)` | Remove — use `Type` directly in parameter |
+
+---
+
+## AMBIGUOUS FUNCTIONS
+
+Some functions exist in both stdlib and Puppet core. On Puppet 6+:
+
+- **Method syntax** (`$var.func()`) — always Puppet built-in. No action needed.
+- **Bare call** (`func($var)`) where a built-in exists — built-in shadows stdlib. No action needed.
+- **Bare call** where NO built-in exists (e.g., `merge`, `reverse`, `shuffle`) — this is a stdlib call. Leave it alone if not deprecated.
+
+**`merge` has NO Puppet built-in.** Bare `merge($a, $b)` is a stdlib call.
+Use `$hash1 + $hash2` operator if you want to remove the stdlib dependency,
+but `merge` is NOT deprecated in stdlib 9.x, so leave it alone.
+
+**Confirmed Puppet 6+ built-ins:** abs, camelcase, capitalize, ceiling, chomp,
+chop, dig, downcase, empty, flatten, floor, join, keys, length, lstrip, max,
+min, round, rstrip, sort, strip, type, unique, upcase, values
+
+**NOT built-ins (stdlib-only, not deprecated):** merge, reverse, shuffle,
+swapcase, squeeze, any2array, deep_merge, delete, difference, ensure_packages,
+grep, intersection, pick, prefix, range, reject, suffix, union, zip
+
+---
+
+## NON-.PP FILE REPORTING FORMAT
+
+If deprecated usage is found in non-.pp files, report like this:
+
+```
+FINDINGS IN NON-.PP FILES (manual review required):
+  templates/config.erb:15 — uses deprecated `validate_string`
+  lib/puppet/functions/custom.rb:8 — uses deprecated `is_array`
+These files require manual review. Awaiting permission to modify.
+```
+
+---
+
+## PUPPET 8 COMPATIBILITY
+
+All migrations recommended here work on Puppet 6, 7, and 8:
+- Puppet built-in functions are stable across 7 and 8
+- Type match expressions (`$var =~ Type`) work on Puppet 4+ through 8
+- Typed parameters and `assert_type()` work on Puppet 4+ through 8
+
+---
+
+## KNOWN LIMITATIONS
+
+1. Regex-based detection, not AST — multi-line constructs may be missed
+2. Cannot distinguish Puppet built-in from stdlib for bare function calls
+3. Only .pp files are scanned — .erb templates need manual review
+4. String/comment stripping in the script is naive — verify edge cases
