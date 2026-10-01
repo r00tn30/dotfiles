@@ -1,0 +1,21 @@
+theme = catppuccin-mocha.conf
+font-size = 17
+background-blur-radius = 20
+window-decoration = true
+
+# Font settings
+font-family = "JetBrains Mono Nerd Font"
+
+# Transparency & padding
+background-opacity = 0.95
+window-padding-x = 16
+window-padding-y = 12
+
+# Cursor customization (fixed option names)
+cursor-style = block
+cursor-style-blink = true
+cursor-color = "#f5e0dc"
+
+# Selection colors (Catppuccin Mocha)
+selection-foreground = "#1e1e2e"
+selection-background = "#89b4fa"

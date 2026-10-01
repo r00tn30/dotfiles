@@ -15,7 +15,6 @@
   },
   "python.analysis.typeCheckingMode": "standard",
   "files.autoSave": "onFocusChange",
-  "workbench.colorTheme": "Tokyo Night AltSynt",
   "cSpell.userWords": [
     "cftest",
     "chdir",
@@ -47,7 +46,6 @@
   "workbench.settings.applyToAllProfiles": [],
   "application.shellEnvironmentResolutionTimeout": 30,
   "git.confirmSync": false,
-  "editor.fontSize": 15,
   "editor.fontFamily": "JetBrains Mono",
   "editor.accessibilitySupport": "on",
   "accessibility.signalOptions.volume": 0,
@@ -63,4 +61,6 @@
   "diffEditor.ignoreTrimWhitespace": false,
   "window.autoDetectColorScheme": false,
   "extensions.installCooldownHours": 48,
+  "editor.fontSize": 13,
+  "workbench.colorTheme": "Tokyo Night",
 }

@@ -1,0 +1,9 @@
+[user]
+	name = Suhail Mirza
+	email = smirza@protonmail.com
+[credential "https://origin.cursor.com/git"]
+	helper = 
+	helper = !/Users/smirza/.local/bin/origin credential-helper
+[credential "https://origin.cursor.com"]
+	helper = 
+	helper = !/Users/smirza/.local/bin/origin credential-helper

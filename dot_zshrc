@@ -1,0 +1,142 @@
+# =============================================================================
+# ZINIT PLUGIN MANAGER
+# =============================================================================
+
+ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
+
+# Download Zinit if it's not there yet
+if [ ! -d "$ZINIT_HOME" ]; then
+   mkdir -p "$(dirname $ZINIT_HOME)"
+   git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
+fi
+
+# Source/Load zinit
+source "${ZINIT_HOME}/zinit.zsh"
+
+
+# =============================================================================
+# ENVIRONMENT VARIABLES
+# =============================================================================
+
+export PATH="/Users/smirza/.local/bin:$PATH"
+
+# Zsh options
+CASE_SENSITIVE="true"
+ENABLE_CORRECTION="true"
+
+
+# =============================================================================
+# ZINIT PLUGINS
+# =============================================================================
+
+# Syntax highlighting and autosuggestions
+zinit light zsh-users/zsh-syntax-highlighting
+zinit light zsh-users/zsh-completions
+zinit light zsh-users/zsh-autosuggestions
+zinit light Aloxaf/fzf-tab
+
+
+# =============================================================================
+# ZINIT SNIPPETS (Oh My Zsh)
+# =============================================================================
+
+zinit snippet OMZL::git.zsh
+zinit snippet OMZP::git
+zinit snippet OMZP::sudo
+zinit snippet OMZP::archlinux
+zinit snippet OMZP::aws
+zinit snippet OMZP::kubectl
+zinit snippet OMZP::kubectx
+zinit snippet OMZP::command-not-found
+
+
+# =============================================================================
+# COMPLETIONS
+# =============================================================================
+
+autoload -Uz compinit && compinit
+zinit cdreplay -q
+
+
+# =============================================================================
+# KEYBINDINGS
+# =============================================================================
+
+bindkey -e
+bindkey '^p' history-search-backward
+bindkey '^n' history-search-forward
+bindkey '^[w' kill-region
+
+
+# =============================================================================
+# HISTORY CONFIGURATION
+# =============================================================================
+
+HISTSIZE=5000
+HISTFILE=~/.zsh_history
+SAVEHIST=$HISTSIZE
+HISTDUP=erase
+
+setopt appendhistory
+setopt sharehistory
+setopt hist_ignore_space
+setopt hist_ignore_all_dups
+setopt hist_save_no_dups
+setopt hist_ignore_dups
+setopt hist_find_no_dups
+
+
+# =============================================================================
+# COMPLETION STYLING
+# =============================================================================
+
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+zstyle ':completion:*' menu no
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls --color $realpath'
+zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
+
+
+# =============================================================================
+# ALIASES
+# =============================================================================
+
+# General aliases
+alias ls='ls --color'
+alias vim='nvim'
+alias c='clear'
+
+# Eza aliases
+alias l='eza --icons --group-directories-first'
+alias ll='eza -la --icons --group-directories-first --sort=modified'
+alias lt='eza --tree --icons --group-directories-first'
+alias lag='eza -la --icons --git --group-directories-first --sort=modified'
+
+# Python aliases (using uv)
+alias python='uv run python'
+alias python3='uv run python3'
+alias pip='uv pip'
+
+
+# =============================================================================
+# SHELL INTEGRATIONS
+# =============================================================================
+
+# FZF
+eval "$(fzf --zsh)"
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+# Zoxide (smart cd)
+eval "$(zoxide init --cmd cd zsh)"
+
+# UV (Python package manager)
+eval "$(uv generate-shell-completion zsh)"
+
+
+# =============================================================================
+# PROMPT
+# =============================================================================
+
+# Initialize Starship prompt
+eval "$(starship init zsh)"
+export PATH="$HOME/.local/bin:$PATH"
